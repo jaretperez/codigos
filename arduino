@@ -1,0 +1,39 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <ArduinoJson.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Dirección I2C del LCD y tamaño (16x2)
+
+void setup() {
+  lcd.begin(16, 2);  // Iniciar el LCD con 16 columnas y 2 filas
+  lcd.backlight();  // Encender el backlight del LCD
+  Serial.begin(9600);  // Iniciar comunicación serial a 9600 baudios
+  lcd.print("Esperando Datos");  // Imprimir mensaje inicial
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    // Limpiar pantalla al recibir un mensaje
+    lcd.clear();
+    
+    String message = Serial.readString();
+    
+    // Convertir el mensaje a un objeto JSON
+    StaticJsonDocument<64> doc;
+    deserializeJson(doc, message);
+    
+    // Leer los valores de temperatura y humedad del objeto JSON
+    float temperature = doc["temperatura"];
+    float humidity = doc["humedad"];
+
+    // Mostrar los valores en la pantalla LCD
+    lcd.setCursor(0, 0);
+    lcd.print("Temperatura: ");
+    lcd.print(temperature);
+    lcd.print("C");
+    lcd.setCursor(0, 1);
+    lcd.print("Humedad: ");
+    lcd.print(humidity);
+    lcd.print("%");
+  }
+}
