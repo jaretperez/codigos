@@ -18,6 +18,9 @@ void loop() {
     
     String message = Serial.readString();
     
+    // Decodificar el mensaje de ASCII a UTF-8
+    message = decodeMessage(message);
+    
     // Convertir el mensaje a un objeto JSON
     StaticJsonDocument<64> doc;
     deserializeJson(doc, message);
@@ -36,4 +39,15 @@ void loop() {
     lcd.print(humidity);
     lcd.print("%");
   }
+}
+
+// Función para decodificar el mensaje de ASCII a UTF-8
+String decodeMessage(String message) {
+  String decodedMessage = "";
+  for (int i = 0; i < message.length(); i++) {
+    if (message[i] != '\r' && message[i] != '\n') {
+      decodedMessage += message[i];
+    }
+  }
+  return decodedMessage;
 }
