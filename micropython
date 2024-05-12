@@ -6,7 +6,7 @@ import ujson
 from umqtt.simple import MQTTClient
 
 # Configuración de la conexión WiFi
-wifi_config = {"ssid": "PB Lopez", "password": "RODS-941"}
+wifi_config = {"ssid": "INFINITUM6BF6", "password": "6pH3Q5E7Fb"}
 
 # Configuración de pines para la comunicación entre ESP32 y Arduino Uno
 ESP32_TX2 = 17  # Pin TX de ESP32
@@ -54,11 +54,11 @@ while True:
     sensor.measure()
     temperatura = sensor.temperature()
     humedad = sensor.humidity()
-    
+
     # Verificar si la lectura es válida
     if temperatura is not None and humedad is not None:
         message = ujson.dumps({"temperatura": temperatura, "humedad": humedad})
-        
+
         # Codificar el mensaje
         encoded_message = message.encode("utf-8")
 
@@ -81,5 +81,4 @@ while True:
                 time.sleep_ms(100)
     else:
         print("Error al leer el sensor DHT11")
-    
     time.sleep(1)
