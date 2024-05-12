@@ -1,0 +1,85 @@
+import network
+import time
+from machine import Pin, UART
+import dht
+import ujson
+from umqtt.simple import MQTTClient
+
+# Configuración de la conexión WiFi
+wifi_config = {"ssid": "PB Lopez", "password": "RODS-941"}
+
+# Configuración de pines para la comunicación entre ESP32 y Arduino Uno
+ESP32_TX2 = 17  # Pin TX de ESP32
+ESP32_RX2 = 16  # Pin RX de ESP32
+
+led = Pin(2, Pin.OUT)
+
+# Configurar UART para la comunicación entre ESP32 y Arduino Uno
+uart = UART(1, baudrate=9600, tx=Pin(ESP32_TX2), rx=Pin(ESP32_RX2))
+
+# Inicializar objeto DHT11
+sensor = dht.DHT11(Pin(4))
+
+# Función para conectar a WiFi
+def connect_to_wifi():
+    print("Conectando a WiFi...")
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(wifi_config["ssid"], wifi_config["password"])
+    while not wlan.isconnected():
+        pass
+    print("Conectado a WiFi:", wlan.ifconfig())
+    return wlan
+
+
+# Conectar a WiFi
+wifi_interface = connect_to_wifi()
+
+# MQTT Server Parameters
+MQTT_CLIENT_ID = "micropython-weather-demo"
+MQTT_BROKER = "broker.mqttdashboard.com"
+MQTT_USER = ""
+MQTT_PASSWORD = ""
+MQTT_TOPIC = "clima-weather"
+
+# Conectar al servidor MQTT
+print("Conectando a servidor MQTT... ", end="")
+client = MQTTClient(MQTT_CLIENT_ID, MQTT_BROKER, user=MQTT_USER, password=MQTT_PASSWORD)
+client.connect()
+print("Conectado a servidor MQTT!")
+
+prev_weather = {"temperatura": None, "humedad": None}
+while True:
+    # Medir temperatura y humedad
+    sensor.measure()
+    temperatura = sensor.temperature()
+    humedad = sensor.humidity()
+    
+    # Verificar si la lectura es válida
+    if temperatura is not None and humedad is not None:
+        message = ujson.dumps({"temperatura": temperatura, "humedad": humedad})
+        
+        # Codificar el mensaje
+        encoded_message = message.encode("utf-8")
+
+        # Convertir a ASCII
+        ascii_message = encoded_message.decode("ascii")
+
+        if message != prev_weather:
+            # Enviar datos al Arduino Uno a través de UART
+            uart.write(ascii_message + "\n")
+
+            # Publicar datos en MQTT
+            client.publish(MQTT_TOPIC, message)
+            prev_weather = message
+
+            # Encender y apagar el LED 4 veces
+            for _ in range(4):
+                led.value(1)
+                time.sleep_ms(100)
+                led.value(0)
+                time.sleep_ms(100)
+    else:
+        print("Error al leer el sensor DHT11")
+    
+    time.sleep(1)
